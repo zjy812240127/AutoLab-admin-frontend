@@ -1,0 +1,170 @@
+<template>
+  <div class="app-container">
+    课程列表
+
+    <!--查询表单-->
+    <el-form :inline="true"
+             class="demo-form-inline">
+      <el-form-item>
+        <el-input v-model="courseQuery.title"
+                  placeholder="课程名称" />
+      </el-form-item>
+      <el-form-item>
+        <el-select v-model="courseQuery.status"
+                   clearable
+                   placeholder="课程状态">
+          <el-option :value="Normal"
+                     label="已发布" />
+          <el-option :value="Draft"
+                     label="未发布" />
+        </el-select>
+      </el-form-item>
+
+      <el-button type="primary"
+                 icon="el-icon-search"
+                 @click="getList()">查 询</el-button>
+      <el-button type="default"
+                 @click="resetData()">清空</el-button>
+    </el-form>
+
+    <!-- 表格 -->
+    <el-table :data="rows"
+              border
+              fit
+              highlight-current-row>
+
+      <el-table-column label="序号"
+                       width="70"
+                       align="center">
+        <template slot-scope="scope">
+          <!-- current，limit是后端的参数 -->
+          {{ (current - 1) * limit + scope.$index + 1 }}
+        </template>
+      </el-table-column>
+      <!-- prop填的是后端类的属性名 -->
+      <el-table-column prop="title"
+                       label="课程名称"
+                       width="300" />
+
+      <el-table-column label="课程状态"
+                       width="80">
+        <template slot-scope="scope">
+          {{ scope.row.status ==="Normal"?'已发布':'未发布' }}
+        </template>
+
+      </el-table-column>
+
+      <el-table-column prop="lessonNum"
+                       label="课时数"
+                       width="60" />
+
+      <el-table-column prop="gmtCreate"
+                       label="添加时间"
+                       width="160" />
+
+      <el-table-column prop="viewCount"
+                       label="浏览数量"
+                       width="60" />
+
+      <el-table-column label="操作"
+                       align="center">
+        <template slot-scope="scope">
+          <!-- html里面的路由跳转实现 -->
+          <router-link :to="'/course/info/'+scope.row.id">
+            <el-button type="primary"
+                       size="mini"
+                       icon="el-icon-edit">修改课程信息</el-button>
+          </router-link>
+          <router-link :to="'/course/chapter/'+scope.row.id">
+            <el-button type="primary"
+                       size="mini"
+                       icon="el-icon-edit">修改课程大纲信息</el-button>
+          </router-link>
+          <el-button type="danger"
+                     size="mini"
+                     icon="el-icon-delete"
+                     @click="removeDataById(scope.row.id)">删除</el-button>
+        </template>
+      </el-table-column>
+    </el-table>
+
+    <!-- 分页 传入参数current/limit/total @绑定事件 getList(默认会传入current参数) -->
+    <el-pagination :current-page="current"
+                   :page-size="limit"
+                   :total="total"
+                   style="padding: 30px 0; text-align: center;"
+                   layout="total, prev, pager, next, jumper"
+                   @current-change="getList" />
+
+  </div>
+</template>
+
+<script>
+// 引入api中的接口文件
+import course from '@/api/edu/course'
+
+export default {
+  // 核心代码编写处（axios）
+  data () { // 定义后端请求所需以及返回的变量以及初始值
+    return {
+      current: 1, // 当前页
+      limit: 3, // 每页的记录数
+      total: 0,
+      rows: null, // 查到的讲师列表
+      courseQuery: {} // 传到后端方法的封装对象
+    }
+  },
+  created () { // 调用methods中的方法
+    this.getList()
+  },
+  methods: { // axios方法
+
+    // 定义一个方法调用api中的接口方法定位到要访问的后端方法
+    getList (current = 1) {
+      this.current = current // 为了分页插件中点击页面后会进行相应的传递，分页插件会传入每次的current参数
+      course.getCourseList(this.current, this.limit, this.courseQuery)
+        .then(response => {
+          console.log(response)
+          // 课程列表
+          this.rows = response.data.rows
+          this.total = response.data.total
+          console.log(this.rows)
+          console.log(this.total)
+        })
+        .catch(error => {
+          console.log(error)
+        })
+    },
+    resetData () { // 清空条件查询
+      // 表单输入项清空
+      this.courseQuery = {} // 因为是双向绑定，所以此处对象为空，表单中也会为空
+      // 查询所有讲师数据
+      this.getList()
+    },
+    removeDataById (id) { // 删除按钮，这里的id不能少，不然以下程序找不到id
+      // 弹框确认是否删除
+      alert(id)
+      this.$confirm('此操作将永久删除课程信息, 是否继续?', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }).then(() => {
+        // 若确认删除，走后台  刷新列表
+        // id由按钮中的scope.row.id传递
+        course.deleteById(id)
+          .then(response => {
+            // 显示信息
+            this.$message({
+              type: 'success',
+              message: '删除成功!'
+            })
+            // 刷新列表
+            this.getList()
+          })
+      })
+      // 统一不写.catch（）方法，因为有可能会报错
+    }
+  }
+
+}
+</script>

@@ -1,0 +1,5 @@
+本仓库中的程序为项目的前台管理界面程序
+
+项目的前端页面程序在仓库AutoLab-member-frontend
+
+项目的后端程序在仓库AutoLab-backend
